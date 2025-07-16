@@ -23,9 +23,56 @@ model UserProfile {
   role       UserRole?
   activeStatus Boolean     @default(true)
   password   String
-
 }
 
+model Team {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  email       String      @unique
+  password    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  submissions Submission[]
+  points      Int         @default(0)
+  currentChallenge Int    @default(1)
+  @@map("teams")
+}
+
+model Challenge {
+  id                String        @id @default(cuid())
+  title             String
+  description       String
+  algorithmicProblem String       @db.Text
+  buildathonProblem String?      @db.Text
+  flag              String
+  points            Int           @default(100)
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  submissions       Submission[]
+  order             Int           @unique
+  @@map("challenges")
+}
+
+model Submission {
+  id            String      @id @default(cuid())
+  teamId        String
+  challengeId   String
+  type          SubmissionType
+  content       String?     @db.Text
+  githubLink    String?
+  isCorrect     Boolean     @default(false)
+  submittedAt   DateTime    @default(now())
+  executionTime Int?
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  challenge     Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  @@map("submissions")
+}
+
+enum SubmissionType {
+  ALGORITHMIC
+  BUILDATHON
+}
 
 enum UserRole {
   ADMIN
