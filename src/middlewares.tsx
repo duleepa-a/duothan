@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/unauthorized', request.url));
   }
 
-  if (pathname.startsWith('/vanowner') && role !== 'SERVICE') {
+  if (pathname.startsWith('/competitor') && role !== 'COMPETITOR') {
     return NextResponse.redirect(new URL('/unauthorized', request.url));
   }
 
@@ -27,7 +27,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
-    '/vanowner/:path*',
-    '/parent/:path*',
+    '/competitor/:path*',
   ],
 };
