@@ -162,22 +162,31 @@ const PortalPage = () => {
         setError('');
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await fetch('/api/admin/auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: formData.username,
+                    password: formData.password
+                })
+            });
 
-            // Mock admin credentials
-            if (formData.username === 'admin' && formData.password === 'admin123') {
+            const data = await response.json();
+
+            if (data.success) {
                 const admin: Admin = {
-                    id: 'admin1',
-                    username: 'admin',
-                    email: 'admin@codechallenge.com'
+                    id: data.data.user.id,
+                    username: data.data.user.username,
+                    email: `${data.data.user.username}@codechallenge.com`
                 };
                 setCurrentUser(admin);
                 setUserType('admin');
                 localStorage.setItem('user', JSON.stringify(admin));
                 localStorage.setItem('userType', 'admin');
             } else {
-                setError('Invalid admin credentials');
+                setError(data.error || 'Authentication failed');
             }
         } catch (err) {
             setError('Authentication failed');
@@ -186,7 +195,18 @@ const PortalPage = () => {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            // Call logout API if user is admin
+            if (userType === 'admin') {
+                await fetch('/api/admin/auth/logout', {
+                    method: 'POST',
+                });
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        
         setCurrentUser(null);
         setUserType(null);
         setUserTypeSelection(null);
@@ -460,20 +480,21 @@ const PortalPage = () => {
     }
 
     // Render the main portal
-
-    return (
-        <Portal
-            user={currentUser}
-            userType={userType}
-            onLogout={handleLogout}
-            teams={teams}
-            setTeams={setTeams}
-            challenges={challenges}
-            setChallenges={setChallenges}
-            submissions={submissions}
-            setSubmissions={setSubmissions}
-        />
-    );
+    if (currentUser && userType) {
+        return (
+            <Portal
+                user={currentUser}
+                userType={userType}
+                onLogout={handleLogout}
+                teams={teams}
+                setTeams={setTeams}
+                challenges={challenges}
+                setChallenges={setChallenges}
+                submissions={submissions}
+                setSubmissions={setSubmissions}
+            />
+        );
+    }
 };
 
 export default PortalPage;
