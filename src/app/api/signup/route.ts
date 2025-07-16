@@ -25,14 +25,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('Received request for user registration');
     const body = await req.json();
-    const validation = SignUpdata.safeParse(body);
-
-    if (!validation.success) {
-      return NextResponse.json({
-        errors: validation.error.errors 
-      }, { status: 400 });
-    }
+   
 
     const existingUser = await prisma.userProfile.findUnique({
       where: { email: body.email },
@@ -56,6 +51,8 @@ export async function POST(req: NextRequest) {
         activeStatus: true,
       }
     });
+
+    console.log('New user created:', newUser);
 
     // Create the COMPETITOR entry
     const newCompetitor = await prisma.competitor.create({

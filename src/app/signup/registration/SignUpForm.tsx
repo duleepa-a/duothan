@@ -105,9 +105,6 @@ const SignUpForm = () => {
     };
 
     const handleSubmit = async () => {
-      if (!validateStep2()) {
-        return;
-      }
       setIsSubmitting(true);
       try {
         // Prepare payload for backend

@@ -1,125 +1,97 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { Code2, Menu, X } from 'lucide-react';
 import Link from 'next/link';
-import { useSession,signOut } from 'next-auth/react';
 import Image from 'next/image';
 
+const NavBar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const { status, data: session } = useSession(); // ✅ session logic
 
-export default function Navbar() {
-
-  const {status, data: session} = useSession();
-
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-gray-900/95 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Left Logo */}
+          <div className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
+              <Code2 className="w-6 h-6 text-black" />
+            </div>
+            <span className="text-xl font-bold text-white">CodeChallenge</span>
+          </div>
 
-        <div className="text-xl font-bold text-blue-900">
-          {/* <Link href="/">School<span className="text-yellow-500">Way</span></Link> */}
-          <Link href="/"> <img src="/logo/Logo_light.svg" height={100} width={100} alt="" /></Link>
+          {/* Middle Navigation */}
+          <div className="hidden md:flex space-x-8">
+            <a href="#home" className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">Home</a>
+            <a href="#features" className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">Features</a>
+            <a href="#challenges" className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">Challenges</a>
+            <a href="#leaderboard" className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">Leaderboard</a>
+            <a href="#contact" className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">Contact</a>
+          </div>
 
-        </div>
-        <ul className="hidden md:flex space-x-6 text-sm font-medium text-active-text ">
-          <li><Link href="/" className='no-underline hover:text-primary'>Home</Link></li>
-          <li><Link href="#services" className='no-underline hover:text-primary'>Service</Link></li>
-          <li><Link href="#features" className='no-underline hover:text-primary'>Features</Link></li>
-          <li><Link href="#contact" className='no-underline hover:text-primary'>Contact</Link></li>
-          <li><Link href="#testimonials" className='no-underline hover:text-primary'>Testimonial</Link></li>
-          <li><Link href="#faq" className='no-underline hover:text-primary'>FAQ</Link></li>
-        </ul>
-        {/* {
-          JSON.parse(localStorage.getItem('user') || '{}').email
-          }
-         */}
-        <div className="space-x-2">
-          {status==="unauthenticated" && <>
-          {
-          JSON.parse(localStorage.getItem('user') || '{}').serviceName
-          }
-          <Link href="/login">
-            <button className="cursor-pointer text-gray-700 px-4 py-2 text-sm">Login</button>
-          </Link>
-          <Link href="/signup">
-            <button className="btn-small-primary">
-              Sign up
-            </button>
-          </Link>
-          </>
-          }
-            {/* <div>
-              <pre>{JSON.stringify(session, null, 2)}</pre>
-            </div> */}
-          {
-          status === "authenticated" 
-          // && <Image src={session.user!.picture}/> 
-          &&<> 
-          {/* {
-          JSON.parse(localStorage.getItem('user') || '{}').serviceName
-          } */}
-          <div className="flex justify-center align-middle">
-            {(session.user?.role === "SERVICE" || session.user?.role === "ADMIN") ? (
-              <Link href={session.user?.role === "SERVICE" ? "/vanowner" : "/admin"}>
-                <div tabIndex={0} role="button" className="btn-ghost rounded-full mr-5"> 
-                  {/* border-2 border-amber-400 class data for DP contrast */}
+          {/* Right Auth Controls */}
+          <div className="hidden md:flex items-center space-x-4">
+            {status === 'authenticated' ? (
+              <>
+                <Link href={
+                  session.user?.role === 'ADMIN'
+                    ? '/admin'
+                    : session.user?.role === 'COMPETITOR'
+                    ? '/competitor'
+                    : '#'
+                }>
                   <Image
-                    src={session.user?.image || "/Images/male_pro_pic_placeholder.png"}
+                    src={session.user?.image || '/Images/male_pro_pic_placeholder.png'}
+                    alt="User"
                     width={40}
                     height={40}
-                    alt="User image"
-                    className="rounded-full"
+                    className="rounded-full border-2 border-yellow-500"
                   />
-                </div>
-              </Link>
-            ) : (
-              <div tabIndex={0} role="button" className="btn-ghost rounded-full">
-                <Image
-                  src={session.user?.image || "/Images/male_pro_pic_placeholder.png"}
-                  width={40}
-                  height={40}
-                  alt="User image"
-                  className="rounded-full"
-                />
-              </div>
-            )}
-            
-            <ul
-              tabIndex={0}
-              className="flex gap-2 ">
-              
-              {/* {session.user?.role === "SERVICE" ? (
-                <li>
-                  <Link href="/vanowner" className='no-underline hover:text-primary'>
-                    <button className="cursor-pointer text-gray-700 px-4 py-2 text-sm">Dashboard</button>
-                  </Link>
-                </li>
-              ) : session.user?.role === "ADMIN" ? (
-                <li>
-                  <Link href="/admin">
-                    <button className='cursor-pointer'>
-                      Dashboard
-                    </button>
-                  </Link>
-                </li>
-              ) : null} */}
-              <li>
-                <div className="flex items-center h-full">
-                  <button
-                  className="btn-small-primary"
-                  onClick={() =>
-                    signOut({ callbackUrl: "/" })
-                  }
-                  >
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="text-white text-sm px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
+                >
                   Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <button className="text-gray-300 hover:text-white px-4 py-2 text-sm font-medium transition-colors">
+                    Sign In
                   </button>
-                </div>
-              </li>
-            </ul>
-          </div> </>
-          // &&<>{session.user!.name}</>
-          }
-          
+                </Link>
+                <Link href="/signup/registration">
+                  <button className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-6 py-2 rounded-lg text-sm font-medium hover:from-yellow-500 hover:to-yellow-600 transition-all font-semibold">
+                    Get Started
+                  </button>
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Hamburger */}
+          <div className="md:hidden">
+            <button onClick={() => setIsOpen(!isOpen)} className="text-gray-300 hover:text-white">
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </div>
     </nav>
   );
-}
+};
+
+export default NavBar;

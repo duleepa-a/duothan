@@ -85,8 +85,8 @@ export default function LoginPage() {
             
             if (userRole === 'ADMIN') {
               router.push('/admin');
-            } else if (userRole === 'SERVICE') {
-              router.push('/vanowner');
+            } else if (userRole === 'COMPETITOR') {
+              router.push('/competitor');
             } else if (userRole === 'PARENT') {
               router.push('/parent');
             } else {
