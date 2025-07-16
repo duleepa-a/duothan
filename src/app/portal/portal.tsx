@@ -7,6 +7,7 @@ import {
     Search, Filter, Upload, Download, Eye, Settings, BarChart3, Activity, Calendar,
     FileText, Code, Flag, Send, CheckSquare, AlertCircle, Loader
 } from 'lucide-react';
+import { useAdminTeams, useAdminChallenges, useAdminSubmissions, useAdminAnalytics, apiCall } from '@/hooks/useApi';
 
 interface Team {
     id: string;
@@ -158,11 +159,43 @@ const Portal: React.FC<PortalProps> = ({
 
     // Admin Dashboard
     const AdminDashboard = () => {
+        const { data: analyticsData, loading: analyticsLoading, error: analyticsError } = useAdminAnalytics();
+        const { data: teamsData, loading: teamsLoading } = useAdminTeams();
+        const { data: submissionsData, loading: submissionsLoading } = useAdminSubmissions({ limit: 5 });
+
+        if (analyticsLoading || teamsLoading || submissionsLoading) {
+            return (
+                <div className="p-6 flex items-center justify-center">
+                    <Loader className="w-8 h-8 animate-spin text-yellow-400" />
+                    <span className="ml-2 text-white">Loading dashboard...</span>
+                </div>
+            );
+        }
+
+        if (analyticsError) {
+            return (
+                <div className="p-6">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-300">
+                        Error loading dashboard: {analyticsError}
+                    </div>
+                </div>
+            );
+        }
+
+        const overview = analyticsData?.overview || {
+            totalTeams: 0,
+            activeChallenges: 0,
+            totalSubmissions: 0,
+            completionRate: 0
+        };
+        const topTeams = analyticsData?.topTeams || [];
+        const recentSubmissions = submissionsData?.submissions || [];
+
         const stats = [
-            { label: 'Registered Teams', value: teams.length, icon: <Users className="w-6 h-6" /> },
-            { label: 'Active Challenges', value: challenges.filter(c => c.active).length, icon: <Target className="w-6 h-6" /> },
-            { label: 'Total Submissions', value: submissions.length, icon: <FileText className="w-6 h-6" /> },
-            { label: 'Avg Team Points', value: Math.round(teams.reduce((acc, team) => acc + team.points, 0) / teams.length) || 0, icon: <Trophy className="w-6 h-6" /> }
+            { label: 'Registered Teams', value: overview.totalTeams || 0, icon: <Users className="w-6 h-6" /> },
+            { label: 'Active Challenges', value: overview.activeChallenges || 0, icon: <Target className="w-6 h-6" /> },
+            { label: 'Total Submissions', value: overview.totalSubmissions || 0, icon: <FileText className="w-6 h-6" /> },
+            { label: 'Completion Rate', value: `${overview.completionRate || 0}%`, icon: <Trophy className="w-6 h-6" /> }
         ];
 
         return (
@@ -185,7 +218,7 @@ const Portal: React.FC<PortalProps> = ({
                     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h3 className="text-xl font-semibold text-white mb-4">Top Teams</h3>
                         <div className="space-y-3">
-                            {teams.sort((a, b) => b.points - a.points).slice(0, 5).map((team, index) => (
+                            {topTeams.slice(0, 5).map((team: any, index: number) => (
                                 <div key={team.id} className="flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
                                         <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-black text-sm font-bold">
@@ -202,25 +235,20 @@ const Portal: React.FC<PortalProps> = ({
                     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h3 className="text-xl font-semibold text-white mb-4">Recent Activity</h3>
                         <div className="space-y-3">
-                            {submissions.slice(0, 5).map((submission) => {
-                                const team = teams.find(t => t.id === submission.teamId);
-                                const challenge = challenges.find(c => c.id === submission.challengeId);
-                                return (
-                                    <div key={submission.id} className="flex items-center justify-between">
-                                        <div className="text-white text-sm">
-                                            <span className="font-medium">{team?.name}</span>
-                                            <span className="text-gray-400"> submitted {submission.type}</span>
-                                        </div>
-                                        <div className={`px-2 py-1 rounded text-xs ${
-                                            submission.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
-                                                submission.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                                    'bg-yellow-500/20 text-yellow-400'
-                                        }`}>
-                                            {submission.status}
-                                        </div>
+                            {recentSubmissions.slice(0, 5).map((submission: any) => (
+                                <div key={submission.id} className="flex items-center justify-between">
+                                    <div className="text-white text-sm">
+                                        <span className="font-medium">{submission.team?.name}</span>
+                                        <span className="text-gray-400"> submitted {submission.type.toLowerCase()}</span>
                                     </div>
-                                );
-                            })}
+                                    <div className={`px-2 py-1 rounded text-xs ${
+                                        submission.isCorrect ? 'bg-green-500/20 text-green-400' :
+                                            'bg-yellow-500/20 text-yellow-400'
+                                    }`}>
+                                        {submission.isCorrect ? 'accepted' : 'pending'}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -230,42 +258,73 @@ const Portal: React.FC<PortalProps> = ({
 
     // Admin Challenge Management
     const AdminChallenges = () => {
-        const handleCreateChallenge = (formData: any) => {
-            const newChallenge: Challenge = {
-                id: Date.now().toString(),
-                title: formData.title,
-                description: formData.description,
-                algorithmic: {
-                    problem: formData.algorithmicProblem,
-                    constraints: formData.constraints,
-                    examples: [
-                        { input: formData.exampleInput1, output: formData.exampleOutput1 },
-                        { input: formData.exampleInput2, output: formData.exampleOutput2 }
-                    ],
-                    flag: formData.flag
-                },
-                buildathon: {
-                    problem: formData.buildathonProblem,
-                    requirements: formData.requirements.split('\n').filter((req: string) => req.trim()),
-                    deadline: new Date(formData.deadline)
-                },
-                points: parseInt(formData.points),
-                active: true,
-                createdAt: new Date()
-            };
-            setChallenges([...challenges, newChallenge]);
-            setShowCreateChallenge(false);
+        const { data: challengesData, loading, error, fetchData } = useAdminChallenges();
+
+        const handleCreateChallenge = async (formData: any) => {
+            try {
+                await apiCall('/api/admin/challenges', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title: formData.title,
+                        description: formData.description,
+                        algorithmicProblem: formData.algorithmicProblem,
+                        buildathonProblem: formData.buildathonProblem,
+                        flag: formData.flag,
+                        points: parseInt(formData.points),
+                        order: parseInt(formData.order),
+                        isActive: true
+                    })
+                });
+                fetchData();
+                setShowCreateChallenge(false);
+            } catch (error) {
+                console.error('Create challenge error:', error);
+            }
         };
 
-        const handleDeleteChallenge = (id: string) => {
-            setChallenges(challenges.filter(c => c.id !== id));
+        const handleDeleteChallenge = async (id: string) => {
+            if (confirm('Are you sure you want to delete this challenge?')) {
+                try {
+                    await apiCall(`/api/admin/challenges/${id}`, { method: 'DELETE' });
+                    fetchData();
+                } catch (error) {
+                    console.error('Delete challenge error:', error);
+                }
+            }
         };
 
-        const handleToggleActive = (id: string) => {
-            setChallenges(challenges.map(c =>
-                c.id === id ? { ...c, active: !c.active } : c
-            ));
+        const handleToggleActive = async (id: string, currentStatus: boolean) => {
+            try {
+                await apiCall(`/api/admin/challenges/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ isActive: !currentStatus })
+                });
+                fetchData();
+            } catch (error) {
+                console.error('Toggle challenge error:', error);
+            }
         };
+
+        if (loading) {
+            return (
+                <div className="p-6 flex items-center justify-center">
+                    <Loader className="w-8 h-8 animate-spin text-yellow-400" />
+                    <span className="ml-2 text-white">Loading challenges...</span>
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="p-6">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-300">
+                        Error loading challenges: {error}
+                    </div>
+                </div>
+            );
+        }
+
+        const challenges = challengesData?.challenges || [];
 
         return (
             <div className="p-6">
@@ -281,7 +340,7 @@ const Portal: React.FC<PortalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
-                    {challenges.map((challenge) => (
+                    {challenges.map((challenge: any) => (
                         <div key={challenge.id} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
@@ -290,12 +349,12 @@ const Portal: React.FC<PortalProps> = ({
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <div className={`px-2 py-1 rounded text-xs ${
-                                        challenge.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                        challenge.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                                     }`}>
-                                        {challenge.active ? 'Active' : 'Inactive'}
+                                        {challenge.isActive ? 'Active' : 'Inactive'}
                                     </div>
                                     <button
-                                        onClick={() => handleToggleActive(challenge.id)}
+                                        onClick={() => handleToggleActive(challenge.id, challenge.isActive)}
                                         className="text-gray-400 hover:text-white"
                                     >
                                         <Settings className="w-5 h-5" />
@@ -312,20 +371,25 @@ const Portal: React.FC<PortalProps> = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <h4 className="text-sm font-medium text-gray-300 mb-2">Algorithmic Phase</h4>
-                                    <p className="text-sm text-gray-400">{challenge.algorithmic.problem}</p>
+                                    <p className="text-sm text-gray-400">{challenge.algorithmicProblem.substring(0, 100)}...</p>
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-gray-300 mb-2">Buildathon Phase</h4>
-                                    <p className="text-sm text-gray-400">{challenge.buildathon.problem}</p>
+                                    <p className="text-sm text-gray-400">{challenge.buildathonProblem?.substring(0, 100)}...</p>
                                 </div>
                             </div>
 
                             <div className="mt-4 flex items-center justify-between">
-                                <div className="text-sm text-gray-400">
-                                    Points: <span className="text-yellow-400">{challenge.points}</span>
+                                <div className="flex items-center space-x-4">
+                                    <div className="text-sm text-gray-400">
+                                        Points: <span className="text-yellow-400">{challenge.points}</span>
+                                    </div>
+                                    <div className="text-sm text-gray-400">
+                                        Order: <span className="text-white">{challenge.order}</span>
+                                    </div>
                                 </div>
                                 <div className="text-sm text-gray-400">
-                                    Created: {challenge.createdAt.toLocaleDateString()}
+                                    Submissions: <span className="text-white">{challenge.totalSubmissions}</span>
                                 </div>
                             </div>
                         </div>
@@ -348,16 +412,10 @@ const Portal: React.FC<PortalProps> = ({
             title: '',
             description: '',
             algorithmicProblem: '',
-            constraints: '',
-            exampleInput1: '',
-            exampleOutput1: '',
-            exampleInput2: '',
-            exampleOutput2: '',
             flag: '',
             buildathonProblem: '',
-            requirements: '',
-            deadline: '',
-            points: '100'
+            points: '100',
+            order: '1'
         });
 
         const handleSubmit = (e: React.FormEvent) => {
@@ -408,66 +466,13 @@ const Portal: React.FC<PortalProps> = ({
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Constraints</label>
-                            <textarea
-                                value={formData.constraints}
-                                onChange={(e) => setFormData({...formData, constraints: e.target.value})}
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white h-24"
-                                required
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Example Input 1</label>
-                                <input
-                                    type="text"
-                                    value={formData.exampleInput1}
-                                    onChange={(e) => setFormData({...formData, exampleInput1: e.target.value})}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Example Output 1</label>
-                                <input
-                                    type="text"
-                                    value={formData.exampleOutput1}
-                                    onChange={(e) => setFormData({...formData, exampleOutput1: e.target.value})}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Example Input 2</label>
-                                <input
-                                    type="text"
-                                    value={formData.exampleInput2}
-                                    onChange={(e) => setFormData({...formData, exampleInput2: e.target.value})}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Example Output 2</label>
-                                <input
-                                    type="text"
-                                    value={formData.exampleOutput2}
-                                    onChange={(e) => setFormData({...formData, exampleOutput2: e.target.value})}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Flag</label>
                             <input
                                 type="text"
                                 value={formData.flag}
                                 onChange={(e) => setFormData({...formData, flag: e.target.value})}
                                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                placeholder="flag{example}"
                                 required
                             />
                         </div>
@@ -478,37 +483,26 @@ const Portal: React.FC<PortalProps> = ({
                                 value={formData.buildathonProblem}
                                 onChange={(e) => setFormData({...formData, buildathonProblem: e.target.value})}
                                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white h-32"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Requirements (one per line)</label>
-                            <textarea
-                                value={formData.requirements}
-                                onChange={(e) => setFormData({...formData, requirements: e.target.value})}
-                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white h-24"
-                                required
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Deadline</label>
-                                <input
-                                    type="datetime-local"
-                                    value={formData.deadline}
-                                    onChange={(e) => setFormData({...formData, deadline: e.target.value})}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                                    required
-                                />
-                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Points</label>
                                 <input
                                     type="number"
                                     value={formData.points}
                                     onChange={(e) => setFormData({...formData, points: e.target.value})}
+                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Order</label>
+                                <input
+                                    type="number"
+                                    value={formData.order}
+                                    onChange={(e) => setFormData({...formData, order: e.target.value})}
                                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
                                     required
                                 />
@@ -538,134 +532,285 @@ const Portal: React.FC<PortalProps> = ({
 
     // Admin Team Management
     const AdminTeamManagement = () => {
+        const { data: teamsData, loading, error, fetchData } = useAdminTeams();
+        const [searchTerm, setSearchTerm] = useState('');
+        const [currentPage, setCurrentPage] = useState(1);
+
+        const handleSearch = (term: string) => {
+            setSearchTerm(term);
+            setCurrentPage(1);
+            fetchData({ search: term, page: 1 });
+        };
+
+        const handleDeleteTeam = async (teamId: string) => {
+            if (confirm('Are you sure you want to delete this team?')) {
+                try {
+                    await apiCall(`/api/admin/teams/${teamId}`, { method: 'DELETE' });
+                    fetchData({ search: searchTerm, page: currentPage });
+                } catch (error) {
+                    console.error('Delete team error:', error);
+                }
+            }
+        };
+
+        if (loading) {
+            return (
+                <div className="p-6 flex items-center justify-center">
+                    <Loader className="w-8 h-8 animate-spin text-yellow-400" />
+                    <span className="ml-2 text-white">Loading teams...</span>
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="p-6">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-300">
+                        Error loading teams: {error}
+                    </div>
+                </div>
+            );
+        }
+
+        const teams = teamsData?.teams || [];
+        const pagination = teamsData?.pagination;
+
         return (
             <div className="p-6">
-                <h1 className="text-3xl font-bold text-white mb-8">Team Management</h1>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold text-white">Team Management</h1>
+                    <div className="flex items-center space-x-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <input
+                                type="text"
+                                placeholder="Search teams..."
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            />
+                        </div>
+                    </div>
+                </div>
 
                 <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-gray-700">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Team</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Members</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Points</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Completed</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Last Active</th>
-                            </tr>
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Team</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Points</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Completed</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Submissions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Created</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-700">
-                            {teams.map((team) => (
-                                <tr key={team.id} className="hover:bg-gray-700">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-white">{team.name}</div>
-                                        <div className="text-sm text-gray-400">{team.email}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-white">{team.members.length} members</div>
-                                        <div className="text-sm text-gray-400">{team.members.join(', ')}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-yellow-400 font-semibold">{team.points}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-white">{team.challengesCompleted}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-gray-400">{team.lastActive.toLocaleDateString()}</span>
-                                    </td>
-                                </tr>
-                            ))}
+                                {teams.map((team: any) => (
+                                    <tr key={team.id} className="hover:bg-gray-700">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-white">{team.name}</div>
+                                            <div className="text-sm text-gray-400">{team.email}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="text-yellow-400 font-semibold">{team.points}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="text-white">{team.challengesCompleted}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="text-white">{team.totalSubmissions}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="text-gray-400">{new Date(team.createdAt).toLocaleDateString()}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <button
+                                                onClick={() => handleDeleteTeam(team.id)}
+                                                className="text-red-400 hover:text-red-300 transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
+
+                {pagination && (
+                    <div className="flex items-center justify-between mt-6">
+                        <div className="text-sm text-gray-400">
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} teams
+                        </div>
+                        <div className="flex space-x-2">
+                            {pagination.page > 1 && (
+                                <button
+                                    onClick={() => {
+                                        setCurrentPage(pagination.page - 1);
+                                        fetchData({ search: searchTerm, page: pagination.page - 1 });
+                                    }}
+                                    className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
+                                >
+                                    Previous
+                                </button>
+                            )}
+                            {pagination.page < pagination.totalPages && (
+                                <button
+                                    onClick={() => {
+                                        setCurrentPage(pagination.page + 1);
+                                        fetchData({ search: searchTerm, page: pagination.page + 1 });
+                                    }}
+                                    className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
+                                >
+                                    Next
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };
 
     // Admin Submissions
     const AdminSubmissions = () => {
-        const handleUpdateSubmission = (id: string, status: 'accepted' | 'rejected') => {
-            setSubmissions(submissions.map(sub => {
-                if (sub.id === id) {
-                    const updatedSub = { ...sub, status };
-                    if (status === 'accepted') {
-                        // Update team points
-                        const team = teams.find(t => t.id === sub.teamId);
-                        if (team) {
-                            setTeams(teams.map(t =>
-                                t.id === sub.teamId
-                                    ? { ...t, points: t.points + sub.points, challengesCompleted: t.challengesCompleted + 1 }
-                                    : t
-                            ));
-                        }
-                    }
-                    return updatedSub;
-                }
-                return sub;
-            }));
+        const { data: submissionsData, loading, error, fetchData } = useAdminSubmissions();
+        const [statusFilter, setStatusFilter] = useState('all');
+        const [typeFilter, setTypeFilter] = useState('all');
+
+        const handleUpdateSubmission = async (submissionId: string, isCorrect: boolean) => {
+            try {
+                await apiCall(`/api/admin/submissions/${submissionId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ isCorrect })
+                });
+                fetchData();
+            } catch (error) {
+                console.error('Update submission error:', error);
+            }
         };
+
+        const handleFilterChange = (status: string, type: string) => {
+            setStatusFilter(status);
+            setTypeFilter(type);
+            
+            const params: any = {};
+            if (status !== 'all') {
+                params.status = status;
+            }
+            if (type !== 'all') {
+                params.type = type;
+            }
+            
+            fetchData(params);
+        };
+
+        if (loading) {
+            return (
+                <div className="p-6 flex items-center justify-center">
+                    <Loader className="w-8 h-8 animate-spin text-yellow-400" />
+                    <span className="ml-2 text-white">Loading submissions...</span>
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="p-6">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-300">
+                        Error loading submissions: {error}
+                    </div>
+                </div>
+            );
+        }
+
+        const submissions = submissionsData?.submissions || [];
 
         return (
             <div className="p-6">
-                <h1 className="text-3xl font-bold text-white mb-8">Submissions</h1>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold text-white">Submissions</h1>
+                    <div className="flex items-center space-x-4">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => handleFilterChange(e.target.value, typeFilter)}
+                            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="correct">Accepted</option>
+                            <option value="incorrect">Rejected</option>
+                        </select>
+                        <select
+                            value={typeFilter}
+                            onChange={(e) => handleFilterChange(statusFilter, e.target.value)}
+                            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        >
+                            <option value="all">All Types</option>
+                            <option value="ALGORITHMIC">Algorithmic</option>
+                            <option value="BUILDATHON">Buildathon</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div className="space-y-6">
-                    {submissions.map((submission) => {
-                        const team = teams.find(t => t.id === submission.teamId);
-                        const challenge = challenges.find(c => c.id === submission.challengeId);
-
-                        return (
-                            <div key={submission.id} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="text-xl font-semibold text-white">{team?.name}</h3>
-                                        <p className="text-gray-400">{challenge?.title}</p>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            {submission.type} • {submission.submittedAt.toLocaleString()}
-                                        </p>
+                    {submissions.map((submission: any) => (
+                        <div key={submission.id} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-xl font-semibold text-white">{submission.team?.name}</h3>
+                                    <p className="text-gray-400">{submission.challenge?.title}</p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {submission.type.toLowerCase()} • {new Date(submission.submittedAt).toLocaleString()}
+                                    </p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <div className={`px-3 py-1 rounded-full text-sm ${
+                                        submission.isCorrect ? 'bg-green-500/20 text-green-400' :
+                                            'bg-yellow-500/20 text-yellow-400'
+                                    }`}>
+                                        {submission.isCorrect ? 'accepted' : 'pending'}
                                     </div>
-                                    <div className="flex items-center space-x-3">
-                                        <div className={`px-3 py-1 rounded-full text-sm ${
-                                            submission.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
-                                                submission.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                                    'bg-yellow-500/20 text-yellow-400'
-                                        }`}>
-                                            {submission.status}
+                                    {!submission.isCorrect && (
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() => handleUpdateSubmission(submission.id, true)}
+                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+                                            >
+                                                Accept
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateSubmission(submission.id, false)}
+                                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                            >
+                                                Reject
+                                            </button>
                                         </div>
-                                        {submission.status === 'pending' && (
-                                            <div className="flex space-x-2">
-                                                <button
-                                                    onClick={() => handleUpdateSubmission(submission.id, 'accepted')}
-                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                                                >
-                                                    Accept
-                                                </button>
-                                                <button
-                                                    onClick={() => handleUpdateSubmission(submission.id, 'rejected')}
-                                                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                                                >
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="bg-gray-700 rounded-lg p-4">
-                                    <h4 className="text-sm font-medium text-gray-300 mb-2">Submission Content</h4>
-                                    <pre className="text-sm text-gray-400 whitespace-pre-wrap overflow-x-auto">
-                    {submission.content}
-                  </pre>
-                                </div>
-
-                                <div className="mt-4 text-sm text-gray-400">
-                                    Points: <span className="text-yellow-400">{submission.points}</span>
+                                    )}
                                 </div>
                             </div>
-                        );
-                    })}
+
+                            <div className="bg-gray-700 rounded-lg p-4">
+                                <h4 className="text-sm font-medium text-gray-300 mb-2">Submission Content</h4>
+                                {submission.type === 'ALGORITHMIC' ? (
+                                    <pre className="text-sm text-gray-400 whitespace-pre-wrap overflow-x-auto">
+                                        {submission.content}
+                                    </pre>
+                                ) : (
+                                    <div className="text-sm text-gray-400">
+                                        <p>GitHub Link: <a href={submission.githubLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{submission.githubLink}</a></p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mt-4 text-sm text-gray-400">
+                                Points: <span className="text-yellow-400">{submission.challenge?.points || 0}</span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
