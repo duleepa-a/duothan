@@ -1,5 +1,5 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
-// import GoogleProvider from "next-auth/providers/google"
+import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import {PrismaAdapter} from "@next-auth/prisma-adapter"
 import {compare} from "bcryptjs" 
@@ -56,7 +56,6 @@ const authOptions:NextAuthOptions = {
             return {
                 id:`${existingUser.id}`,
                 email: existingUser.email,
-                name:existingUser.firstname,
                 // last:existingUser.lastname
                 role:`${existingUser.role}`,
                 // servicename:existingUser.servicename, fetch service name from vanservice db
@@ -65,10 +64,10 @@ const authOptions:NextAuthOptions = {
             // return NextResponse.json({message: "signed in "},{error:"noerror"})
             }
         }),
-        // GoogleProvider({
-        //     clientId: process.env.GOOGLE_CLIENT_ID!,
-        //     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        // }),
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        }),
 
     ],callbacks:{
         async jwt({token,user}){
