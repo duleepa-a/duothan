@@ -39,7 +39,64 @@ model Admin {
   lastLogin DateTime?
 }
 
+model challenges {
+  id                 String        @id
+  title              String
+  description        String
+  order              Int           @unique
+  isActive           Boolean       @default(true)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime
+  algorithmicProblem String
+  buildathonProblem  String?
+  flag               String
+  points             Int           @default(100)
+  submissions        submissions[]
+}
+
+model submissions {
+  id            String           @id
+  teamId        String
+  challengeId   String
+  content       String?
+  isCorrect     Boolean          @default(false)
+  points        Int              @default(0)
+  submittedAt   DateTime         @default(now())
+  executionTime Int?
+  flagSubmitted String?
+  githubLink    String?
+  output        String?
+  status        SubmissionStatus @default(PENDING)
+  type          SubmissionType
+  challenges    challenges       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  teams         teams            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model teams {
+  id               String        @id
+  name             String        @unique
+  email            String        @unique
+  password         String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  points           Int           @default(0)
+  currentChallenge Int           @default(1)
+  isActive         Boolean       @default(true)
+  submissions      submissions[]
+}
+
 enum UserRole {
   ADMIN
   COMPETITOR
+}
+
+enum SubmissionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum SubmissionType {
+  ALGORITHMIC
+  BUILDATHON
 }

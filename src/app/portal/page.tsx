@@ -241,21 +241,6 @@ const PortalPage = () => {
                 </div>
 
                 <div className="space-y-4">
-                    <button
-                        onClick={() => setUserTypeSelection('team')}
-                        className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 hover:bg-white/20 transition-all group"
-                    >
-                        <div className="flex items-center space-x-4">
-                            <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 text-black p-3 rounded-lg">
-                                <Users className="w-6 h-6" />
-                            </div>
-                            <div className="text-left">
-                                <h3 className="text-xl font-semibold text-white">Team Access</h3>
-                                <p className="text-gray-400">Participate in challenges and compete</p>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-white ml-auto" />
-                        </div>
-                    </button>
 
                     <button
                         onClick={() => setUserTypeSelection('admin')}

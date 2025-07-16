@@ -1,10 +1,31 @@
 'use client';
-import React from 'react';
-import { Trophy, Target, Users, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Trophy, Target, Users } from 'lucide-react';
 import NavBar from '../homeComponents/NavBar';
 
+interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  algorithmicProblem: string;
+  buildathonProblem?: string;
+  flag: string;
+  points: number;
+}
+
 const TeamDashboard = () => {
-  // ✅ Dummy team data
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+
+  const [codeMap, setCodeMap] = useState<Record<string, string>>({});
+  const [langMap, setLangMap] = useState<Record<string, number>>({});
+  const [outputMap, setOutputMap] = useState<Record<string, string>>({});
+  const [inputMap, setInputMap] = useState<Record<string, string>>({});
+
+
   const currentTeam = {
     id: 'team-123',
     name: 'Code Crusaders',
@@ -15,49 +36,6 @@ const TeamDashboard = () => {
     lastActive: new Date(),
   };
 
-  // ✅ Dummy challenges
-  const challenges = [
-    {
-      id: 'challenge-1',
-      title: 'FizzBuzz Pro',
-      description: 'Classic FizzBuzz with a twist',
-      algorithmic: {
-        problem: 'Print numbers from 1 to N with FizzBuzz conditions.',
-        constraints: '1 <= N <= 1000',
-        examples: [{ input: '5', output: '1 2 Fizz 4 Buzz' }],
-        flag: 'FLAG-FIZZBUZZ123',
-      },
-      buildathon: {
-        problem: '',
-        requirements: [],
-        deadline: new Date(),
-      },
-      points: 200,
-      active: true,
-      createdAt: new Date(),
-    },
-    {
-      id: 'challenge-2',
-      title: 'Build a Weather App',
-      description: 'Create a weather app using any public API',
-      algorithmic: {
-        problem: '',
-        constraints: '',
-        examples: [],
-        flag: '',
-      },
-      buildathon: {
-        problem: 'Build an app to display weather data',
-        requirements: ['API integration', 'Responsive UI', 'Dark Mode'],
-        deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-      },
-      points: 500,
-      active: true,
-      createdAt: new Date(),
-    },
-  ];
-
-  // ✅ Dummy submissions
   const submissions = [
     {
       id: 'sub-1',
@@ -81,107 +59,205 @@ const TeamDashboard = () => {
     },
   ];
 
-  // Filter completed challenges (dummy logic: accepted submissions count)
   const completedChallenges = submissions.filter(
     (s) => s.status === 'accepted' && s.teamId === currentTeam.id
   );
 
+  useEffect(() => {
+    async function fetchChallenges() {
+      try {
+        const res = await fetch('/api/challenges');
+        const data = await res.json();
+        setChallenges(data);
+      } catch (err) {
+        console.error('Failed to fetch challenges:', err);
+      }
+    }
+    fetchChallenges();
+  }, []);
+
+  const runCode = async (challengeId: string) => {
+  const source_code = codeMap[challengeId] || '';
+  const language_id = langMap[challengeId] || 71; // Default to Python
+  const stdin = inputMap[challengeId] || '';
+
+  try {
+    const res = await fetch('/api/judge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_code, language_id, stdin }),
+    });
+    const result = await res.json();
+    const output =
+      result.stdout || result.stderr || result.compile_output || 'No output';
+    setOutputMap((prev) => ({ ...prev, [challengeId]: output }));
+  } catch (error) {
+    setOutputMap((prev) => ({
+      ...prev,
+      [challengeId]: 'Execution failed',
+    }));
+  }
+};
+
+
+  
+
   return (
-     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-        <NavBar/>
-        <div className="px-6 pb-6 pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      <NavBar />
+      <div className="px-6 pb-6 pt-20">
         <h1 className="text-3xl font-bold text-white mb-8">Team Dashboard</h1>
 
+        {/* Metrics section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          {/* Points */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-2">
-                <Trophy className="w-6 h-6 text-yellow-400" />
-                <div className="text-2xl font-bold text-white">
-                {currentTeam.points}
-                </div>
+              <Trophy className="w-6 h-6 text-yellow-400" />
+              <div className="text-2xl font-bold text-white">{currentTeam.points}</div>
             </div>
             <div className="text-gray-400 text-sm">Total Points</div>
-            </div>
+          </div>
 
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          {/* Completed Challenges */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-2">
-                <Target className="w-6 h-6 text-green-400" />
-                <div className="text-2xl font-bold text-white">
-                {completedChallenges.length}
-                </div>
+              <Target className="w-6 h-6 text-green-400" />
+              <div className="text-2xl font-bold text-white">{completedChallenges.length}</div>
             </div>
             <div className="text-gray-400 text-sm">Completed Challenges</div>
-            </div>
+          </div>
 
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          {/* Team Members */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-2">
-                <Users className="w-6 h-6 text-blue-400" />
-                <div className="text-2xl font-bold text-white">
-                {currentTeam.members.length}
-                </div>
+              <Users className="w-6 h-6 text-blue-400" />
+              <div className="text-2xl font-bold text-white">{currentTeam.members.length}</div>
             </div>
             <div className="text-gray-400 text-sm">Team Members</div>
-            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold text-white mb-4">
-                Team Members
-            </h3>
-            <div className="space-y-2">
-                {currentTeam.members.map((member, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <span className="text-white">{member}</span>
+        {/* Display Challenges */}
+        <div className="space-y-8">
+        {challenges.map((challenge) => {
+            const teamSubmission = submissions.find(
+            (s) => s.challengeId === challenge.id && s.teamId === currentTeam.id
+            );
+            const isFlagAccepted = teamSubmission?.type === 'algorithmic' && teamSubmission.status === 'accepted';
+
+            return (
+            <div
+                key={challenge.id}
+                className="bg-gray-800 border border-gray-700 p-6 rounded-lg"
+            >
+                <h2 className="text-2xl text-white font-bold mb-4">
+                {challenge.title}
+                </h2>
+                <p className="text-gray-300 mb-2">{challenge.description}</p>
+                <div className="mb-4">
+                <strong className="text-white">Problem:</strong>
+                <pre className="text-sm text-gray-400 bg-black p-2 mt-1 rounded">{challenge.algorithmicProblem}</pre>
                 </div>
-                ))}
-            </div>
-            </div>
 
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold text-white mb-4">
-                Recent Submissions
-            </h3>
-            <div className="space-y-3">
-                {submissions
-                .filter((s) => s.teamId === currentTeam.id)
-                .slice(0, 5)
-                .map((submission) => {
-                    const challenge = challenges.find(
-                    (c) => c.id === submission.challengeId
-                    );
-                    return (
-                    <div
-                        key={submission.id}
-                        className="flex items-center justify-between"
-                    >
-                        <div className="text-white text-sm">
-                        <span className="font-medium">{challenge?.title}</span>
-                        <span className="text-gray-400 block">
-                            {submission.type}
-                        </span>
-                        </div>
-                        <div
-                        className={`px-2 py-1 rounded text-xs ${
-                            submission.status === 'accepted'
-                            ? 'bg-green-500/20 text-green-400'
-                            : submission.status === 'rejected'
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'bg-yellow-500/20 text-yellow-400'
-                        }`}
-                        >
-                        {submission.status}
-                        </div>
+               {/* Language Selector */}
+                <select
+                className="w-full p-2 bg-gray-900 border border-gray-700 text-white rounded"
+                value={langMap[challenge.id] || 71}
+                onChange={(e) =>
+                    setLangMap((prev) => ({
+                    ...prev,
+                    [challenge.id]: Number(e.target.value),
+                    }))
+                }
+                >
+                <option value={54}>C++</option>
+                <option value={71}>Python</option>
+                <option value={63}>JavaScript</option>
+                </select>
+
+                {/* Input (stdin) */}
+                <input
+                className="w-full p-2 bg-gray-800 border border-gray-700 text-white rounded"
+                placeholder="Optional input (stdin)"
+                value={inputMap[challenge.id] || ''}
+                onChange={(e) =>
+                    setInputMap((prev) => ({
+                    ...prev,
+                    [challenge.id]: e.target.value,
+                    }))
+                }
+                />
+
+                {/* Code Editor */}
+                <textarea
+                className="w-full min-h-[150px] p-2 bg-gray-900 border border-gray-700 text-white rounded"
+                placeholder="Write your code here..."
+                value={codeMap[challenge.id] || ''}
+                onChange={(e) =>
+                    setCodeMap((prev) => ({
+                    ...prev,
+                    [challenge.id]: e.target.value,
+                    }))
+                }
+                />
+
+                {/* Run Button */}
+                <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                onClick={() => runCode(challenge.id)}
+                >
+                Run Code
+                </button>
+
+                {/* Output */}
+                <div className="text-green-400 text-sm mt-2 whitespace-pre-line">
+                {outputMap[challenge.id] || 'Output will be shown here...'}
+                </div>
+
+
+                {/* Flag Submission */}
+                {!isFlagAccepted ? (
+                <div className="mt-6 space-y-2">
+                    <label className="text-white text-sm">Submit Flag to unlock buildathon</label>
+                    <div className="flex gap-2">
+                    <input
+                        type="text"
+                        className="flex-1 p-2 bg-gray-900 border border-gray-700 text-white rounded"
+                        placeholder="Enter FLAG..."
+                    />
+                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        Submit
+                    </button>
                     </div>
-                    );
-                })}
+                    <div className="text-red-400 text-sm">Flag invalid or not yet submitted.</div>
+                </div>
+                ) : (
+                <div className="mt-6 bg-gray-900 border border-gray-700 p-4 rounded">
+                    <h3 className="text-white text-lg font-semibold mb-2">🔓 Buildathon Task</h3>
+                    <p className="text-gray-300">{challenge.buildathonProblem}</p>
+
+                    <div className="mt-4 space-y-2">
+                    <label className="text-white text-sm">GitHub Link</label>
+                    <div className="flex gap-2">
+                        <input
+                        type="url"
+                        className="flex-1 p-2 bg-gray-800 border border-gray-600 text-white rounded"
+                        placeholder="https://github.com/team/project"
+                        />
+                        <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                        Submit Build
+                        </button>
+                    </div>
+                    </div>
+                </div>
+                )}
             </div>
-            </div>
+            );
+        })}
         </div>
-        </div>
+
+      </div>
     </div>
   );
 };
