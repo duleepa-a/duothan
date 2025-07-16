@@ -15,13 +15,20 @@ model UserProfile {
   role       UserRole?
   activeStatus Boolean     @default(true)
   password   String
+  competitor competitor?
+  competitorId String?   @unique  
+}
 
+model competitor {
+  id               String      @id @default(cuid())
+  fullName          String
+  contactNo        String
+  userId           String      @unique
+  user             UserProfile @relation(fields: [userId], references: [id])
 }
 
 
 enum UserRole {
   ADMIN
-  PARENT
-  SERVICE
   COMPETITOR
 }
