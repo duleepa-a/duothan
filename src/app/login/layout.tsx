@@ -11,14 +11,14 @@ import Footer from '../components/Footer';
    return (
     <>
      <div className='h-screen flex flex-col'>
-        <Authprovider>
-          <Navbar />
-        </Authprovider>
+        {/*<Authprovider>*/}
+        {/*  <Navbar />*/}
+        {/*</Authprovider>*/}
         <main className='overflow-y-auto'>
             {children}
         </main>
      </div>
-      <Footer/>
+
      </>
    )
  }

@@ -11,13 +11,12 @@ import Footer from '../components/Footer';
  const SignupLayout = ( {children}:Props) => {
    return (
      <div className='h-screen'>
-        <Authprovider>
-          <Navbar />
-        </Authprovider>
+        {/*<Authprovider>*/}
+        {/*  <Navbar />*/}
+        {/*</Authprovider>*/}
         <div>
             {children}
         </div>
-        <Footer/>
      </div>
    )
  }
