@@ -11,15 +11,7 @@ datasource db {
 model UserProfile {
   id         String      @id @default(cuid())
   email      String      @unique
-  firstname  String?
   createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  lastname   String?
-  nic        String?
-  nic_pic    String?
-  birthDate  DateTime?
-  mobile     String?
-  address    String?
   role       UserRole?
   activeStatus Boolean     @default(true)
   password   String
@@ -31,6 +23,5 @@ enum UserRole {
   ADMIN
   PARENT
   SERVICE
-  DRIVER
-  TEACHER
+  COMPETITOR
 }
