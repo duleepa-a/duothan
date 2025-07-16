@@ -20,8 +20,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "SchoolWay",
-  description: "Smart school van management system",
+  title: "The Oasis Protocol",
+  // description: "Smart school van management system",
   icons: {
     icon: "/logo/Logo_dark.svg",
   }
