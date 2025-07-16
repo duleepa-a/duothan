@@ -18,17 +18,7 @@ export default function Home() {
   // const session = await getServerSession(authOptions)
   return (
     <main>
-      <Authprovider>
-        <Navbar/>
-      </Authprovider>
-      <HeroSection />
-      <WhatWeOffer/>
-      <AppDetails/>
-      <HomeInsightBanner/>
-      <HomeInfoCards/>
-      <HomeTestimonials/>
-      <AppLink/>
-      <Footer/>
+      home page
     </main>
   );
 }
