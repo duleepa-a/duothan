@@ -27,6 +27,63 @@ model competitor {
   user             UserProfile @relation(fields: [userId], references: [id])
 }
 
+model Admin {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String   // This will be hashed
+  fullName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+}
+
+// OASIS Protocol Competition Models
+model Team {
+  id               String       @id @default(cuid())
+  name             String       @unique
+  email            String       @unique
+  password         String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  submissions      Submission[]
+  points           Int          @default(0)
+  currentChallenge Int          @default(1)
+  isActive         Boolean      @default(true)
+  
+  @@map("teams")
+}
+
+model Challenge {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  order       Int          @unique
+  maxPoints   Int          @default(100)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  submissions Submission[]
+  
+  @@map("challenges")
+}
+
+model Submission {
+  id          String      @id @default(cuid())
+  teamId      String
+  challengeId String
+  type        String      // "algorithmic" or "buildathon"
+  content     String      // JSON string containing submission data
+  isCorrect   Boolean     @default(false)
+  points      Int         @default(0)
+  submittedAt DateTime    @default(now())
+  
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  challenge   Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  
+  @@map("submissions")
+}
 
 enum UserRole {
   ADMIN

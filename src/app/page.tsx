@@ -35,6 +35,15 @@ const HeroSection = () => {
                         </button>
                     </div>
 
+                    <div className="mt-8">
+              <a 
+                href="/admin/login" 
+                className="inline-flex items-center px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+              >
+                Admin Access
+              </a>
+            </div>
+
                     <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
                         <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 border border-white/20">
                             <div className="text-3xl font-bold text-white mb-2">500+</div>

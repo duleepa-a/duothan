@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { verifyAdminToken } from '@/lib/adminMiddleware';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Verify admin authentication
+    await verifyAdminToken(request);
+    
     // Get total number of teams
     const totalTeams = await prisma.team.count();
 

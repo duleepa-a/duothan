@@ -1,14 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Settings, User, LogOut, Shield } from 'lucide-react';
 
 const AdminDashboardHeader = () => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [adminInfo, setAdminInfo] = useState<{ username: string; fullName?: string } | null>(null);
 
-  const handleLogout = () => {
-    // Add logout logic here
-    console.log('Logout clicked');
+  useEffect(() => {
+    fetchAdminInfo();
+  }, []);
+
+  const fetchAdminInfo = async () => {
+    try {
+      const response = await fetch('/api/admin/auth/me');
+      const result = await response.json();
+      if (result.success) {
+        setAdminInfo(result.data.user);
+      }
+    } catch (error) {
+      console.error('Failed to fetch admin info:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/admin/auth/logout', {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Redirect to login page
+        window.location.href = '/login';
+      } else {
+        console.error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -47,7 +76,9 @@ const AdminDashboardHeader = () => {
               <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
                 <User size={18} className="text-white" />
               </div>
-              <span className="text-sm font-medium">Admin</span>
+              <span className="text-sm font-medium">
+                {adminInfo?.fullName || adminInfo?.username || 'Admin'}
+              </span>
             </button>
 
             {showDropdown && (
