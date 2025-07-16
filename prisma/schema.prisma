@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id         String      @id @default(cuid())
+  email      String      @unique
+  firstname  String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  lastname   String?
+  nic        String?
+  nic_pic    String?
+  birthDate  DateTime?
+  mobile     String?
+  address    String?
+  role       UserRole?
+  activeStatus Boolean     @default(true)
+  password   String
+  vanService VanService?
+  driverProfile DriverProfile?
+
+  vans          Van[]
+}
+
+model VanService {
+  id               String      @id @default(cuid())
+  serviceName      String
+  contactNo        String
+  serviceRegNumber String
+  businessDocument String?
+  userId           String      @unique
+  user             UserProfile @relation(fields: [userId], references: [id])
+}
+
+model DriverProfile {
+  id               String      @id @default(cuid())
+  licenseId        String
+  licenseExpiry    DateTime
+  licenseFront     String?
+  licenseBack      String?
+  policeReport     String?
+  userId           String      @unique
+  user             UserProfile @relation(fields: [userId], references: [id])
+}
+
+model Van {
+  id                       Int      @id @default(autoincrement())
+  registrationNumber       String   @unique
+  licensePlateNumber       String 
+  makeAndModel             String
+  seatingCapacity          Int
+  acCondition              Boolean     
+
+  routeStart               String?
+  routeEnd                 String?
+
+  rBookUrl                 String   
+  revenueLicenseUrl        String
+  fitnessCertificateUrl    String
+  insuranceCertificateUrl  String
+  photoUrl                 String
+   
+  createdAt                DateTime @default(now())
+  ownerId                  String
+  user                     UserProfile @relation(fields: [ownerId], references: [id])
+}
+
+enum UserRole {
+  ADMIN
+  PARENT
+  SERVICE
+  DRIVER
+  TEACHER
+}
