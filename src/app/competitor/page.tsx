@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, Target, Users } from 'lucide-react';
 import NavBar from '../homeComponents/NavBar';
+import Link from 'next/link';
 
 interface Challenge {
   id: string;
@@ -76,35 +77,9 @@ const TeamDashboard = () => {
     fetchChallenges();
   }, []);
 
-  const runCode = async (challengeId: string) => {
-  const source_code = codeMap[challengeId] || '';
-  const language_id = langMap[challengeId] || 71; // Default to Python
-  const stdin = inputMap[challengeId] || '';
-
-  try {
-    const res = await fetch('/api/judge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source_code, language_id, stdin }),
-    });
-    const result = await res.json();
-    const output =
-      result.stdout || result.stderr || result.compile_output || 'No output';
-    setOutputMap((prev) => ({ ...prev, [challengeId]: output }));
-  } catch (error) {
-    setOutputMap((prev) => ({
-      ...prev,
-      [challengeId]: 'Execution failed',
-    }));
-  }
-};
-
-
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <NavBar />
       <div className="px-6 pb-6 pt-20">
         <h1 className="text-3xl font-bold text-white mb-8">Team Dashboard</h1>
 
@@ -140,121 +115,28 @@ const TeamDashboard = () => {
 
         {/* Display Challenges */}
         <div className="space-y-8">
-        {challenges.map((challenge) => {
-            const teamSubmission = submissions.find(
-            (s) => s.challengeId === challenge.id && s.teamId === currentTeam.id
-            );
-            const isFlagAccepted = teamSubmission?.type === 'algorithmic' && teamSubmission.status === 'accepted';
+        {challenges.map((challenge) => (
+          <div
+            key={challenge.id}
+            className="bg-gray-800 border border-gray-700 p-6 rounded-lg"
+          >
+            <h2 className="text-xl text-white font-bold mb-2">
+              {challenge.title}
+            </h2>
+            <p className="text-gray-300 mb-4 line-clamp-2">
+              {challenge.description}
+            </p>
 
-            return (
-            <div
-                key={challenge.id}
-                className="bg-gray-800 border border-gray-700 p-6 rounded-lg"
-            >
-                <h2 className="text-2xl text-white font-bold mb-4">
-                {challenge.title}
-                </h2>
-                <p className="text-gray-300 mb-2">{challenge.description}</p>
-                <div className="mb-4">
-                <strong className="text-white">Problem:</strong>
-                <pre className="text-sm text-gray-400 bg-black p-2 mt-1 rounded">{challenge.algorithmicProblem}</pre>
-                </div>
-
-               {/* Language Selector */}
-                <select
-                className="w-full p-2 bg-gray-900 border border-gray-700 text-white rounded"
-                value={langMap[challenge.id] || 71}
-                onChange={(e) =>
-                    setLangMap((prev) => ({
-                    ...prev,
-                    [challenge.id]: Number(e.target.value),
-                    }))
-                }
-                >
-                <option value={54}>C++</option>
-                <option value={71}>Python</option>
-                <option value={63}>JavaScript</option>
-                </select>
-
-                {/* Input (stdin) */}
-                <input
-                className="w-full p-2 bg-gray-800 border border-gray-700 text-white rounded"
-                placeholder="Optional input (stdin)"
-                value={inputMap[challenge.id] || ''}
-                onChange={(e) =>
-                    setInputMap((prev) => ({
-                    ...prev,
-                    [challenge.id]: e.target.value,
-                    }))
-                }
-                />
-
-                {/* Code Editor */}
-                <textarea
-                className="w-full min-h-[150px] p-2 bg-gray-900 border border-gray-700 text-white rounded"
-                placeholder="Write your code here..."
-                value={codeMap[challenge.id] || ''}
-                onChange={(e) =>
-                    setCodeMap((prev) => ({
-                    ...prev,
-                    [challenge.id]: e.target.value,
-                    }))
-                }
-                />
-
-                {/* Run Button */}
-                <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                onClick={() => runCode(challenge.id)}
-                >
-                Run Code
+            <div className='flex  justify-end items-end'>
+              <Link href={`/challenges/${challenge.id}`}>
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded cursor-pointer">
+                  Solve
                 </button>
-
-                {/* Output */}
-                <div className="text-green-400 text-sm mt-2 whitespace-pre-line">
-                {outputMap[challenge.id] || 'Output will be shown here...'}
-                </div>
-
-
-                {/* Flag Submission */}
-                {!isFlagAccepted ? (
-                <div className="mt-6 space-y-2">
-                    <label className="text-white text-sm">Submit Flag to unlock buildathon</label>
-                    <div className="flex gap-2">
-                    <input
-                        type="text"
-                        className="flex-1 p-2 bg-gray-900 border border-gray-700 text-white rounded"
-                        placeholder="Enter FLAG..."
-                    />
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                        Submit
-                    </button>
-                    </div>
-                    <div className="text-red-400 text-sm">Flag invalid or not yet submitted.</div>
-                </div>
-                ) : (
-                <div className="mt-6 bg-gray-900 border border-gray-700 p-4 rounded">
-                    <h3 className="text-white text-lg font-semibold mb-2">🔓 Buildathon Task</h3>
-                    <p className="text-gray-300">{challenge.buildathonProblem}</p>
-
-                    <div className="mt-4 space-y-2">
-                    <label className="text-white text-sm">GitHub Link</label>
-                    <div className="flex gap-2">
-                        <input
-                        type="url"
-                        className="flex-1 p-2 bg-gray-800 border border-gray-600 text-white rounded"
-                        placeholder="https://github.com/team/project"
-                        />
-                        <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
-                        Submit Build
-                        </button>
-                    </div>
-                    </div>
-                </div>
-                )}
+              </Link>
             </div>
-            );
-        })}
+          </div>
+        ))}
+
         </div>
 
       </div>

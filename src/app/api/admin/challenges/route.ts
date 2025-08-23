@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [challenges, totalChallenges] = await Promise.all([
-      prisma.challenge.findMany({
+      prisma.challenges.findMany({
         where,
         orderBy: { order: 'asc' },
         skip: (page - 1) * limit,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.challenge.count({ where })
+      prisma.challenges.count({ where })
     ]);
 
     const challengesWithStats = challenges.map(challenge => ({
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if order already exists
-    const existingChallenge = await prisma.challenge.findUnique({
+    const existingChallenge = await prisma.challenges.findUnique({
       where: { order }
     });
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const challenge = await prisma.challenge.create({
+    const challenge = await prisma.challenges.create({
       data: {
         title,
         description,

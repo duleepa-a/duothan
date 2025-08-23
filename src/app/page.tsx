@@ -1,7 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import { Code2, Trophy, Users, Zap, Star, ChevronRight, Menu, X, Github, Mail, Phone, MapPin, Clock, Target, Award, Play } from 'lucide-react';
-import NavBar from './homeComponents/NavBar';
 
 // Hero Section Component
 const HeroSection = () => {
@@ -81,25 +80,25 @@ const WhatWeOffer = () => {
     ];
 
     return (
-        <section id="features" className="py-20 bg-gray-50">
+        <section id="features" className="py-20 bg-gray-900">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                         What We Offer
                     </h2>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <p className="text-xl text-gray-200 max-w-3xl mx-auto">
                         A comprehensive platform designed to challenge, educate, and inspire the next generation of developers.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {features.map((feature, index) => (
-                        <div key={index} className="bg-white rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow border border-gray-200 hover:border-yellow-400">
+                        <div key={index} className="bg-gray-500 rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow border border-gray-200 hover:border-yellow-400">
                             <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 text-black p-3 rounded-lg w-fit mb-4">
                                 {feature.icon}
                             </div>
                             <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                            <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                            <p className="text-gray-200 leading-relaxed">{feature.description}</p>
                         </div>
                     ))}
                 </div>
@@ -351,7 +350,7 @@ const Footer = () => {
                             <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
                                 <Code2 className="w-6 h-6 text-black" />
                             </div>
-                            <span className="text-xl font-bold">CodeChallenge</span>
+                            <span className="text-xl font-bold">Oasis</span>
                         </div>
                         <p className="text-gray-400 mb-6 max-w-md">
                             Empowering developers worldwide through innovative coding challenges and collaborative learning experiences.
@@ -411,7 +410,6 @@ const Footer = () => {
 const Home = () => {
     return (
         <main className="min-h-screen">
-            <NavBar/>
             <HeroSection />
             <WhatWeOffer />
             <AppDetails />

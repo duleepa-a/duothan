@@ -28,7 +28,7 @@ model competitor {
 }
 
 model Admin {
-  id        String    @id
+  id        String    @id @default(cuid())
   username  String    @unique
   email     String    @unique
   password  String
@@ -40,7 +40,7 @@ model Admin {
 }
 
 model challenges {
-  id                 String        @id
+  id                 String        @id @default(cuid())
   title              String
   description        String
   order              Int           @unique
@@ -52,10 +52,20 @@ model challenges {
   flag               String
   points             Int           @default(100)
   submissions        submissions[]
+  testCases   TestCase[]
+}
+
+model TestCase {
+  id          String   @id @default(uuid())
+  challengeId String
+  input       String
+  expected    String
+  isPublic    Boolean   @default(false) 
+  challenge   challenges @relation(fields: [challengeId], references: [id])
 }
 
 model submissions {
-  id            String           @id
+  id            String           @id @default(cuid())
   teamId        String
   challengeId   String
   content       String?
@@ -66,14 +76,14 @@ model submissions {
   flagSubmitted String?
   githubLink    String?
   output        String?
-  status        SubmissionStatus @default(PENDING)
+  status        SubmissionStatus              @default(PENDING)
   type          SubmissionType
   challenges    challenges       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   teams         teams            @relation(fields: [teamId], references: [id], onDelete: Cascade)
 }
 
 model teams {
-  id               String        @id
+  id               String        @id @default(cuid())
   name             String        @unique
   email            String        @unique
   password         String
