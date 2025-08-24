@@ -39,9 +39,20 @@ const authOptions:NextAuthOptions = {
             }
 
             const existingUser= await prisma.userProfile.findUnique({
-                where:{email: credentials?.email}
+                where:{email: credentials?.email},
+                include: {
+                    competitor: {
+                        include: {
+                            team: {
+                            select: {
+                                name: true,   // only get team name
+                            },
+                            },
+                        },
+                    }, 
+                },
+                
             })
-    console.log("here is the unique usr ", existingUser);
 
             if(!existingUser){
                 return null
@@ -49,7 +60,6 @@ const authOptions:NextAuthOptions = {
 
             const pwmatch = await compare(credentials.password, existingUser.password);
 
-    console.log(pwmatch);
             if(!pwmatch){
                 return null;
             }
@@ -58,7 +68,10 @@ const authOptions:NextAuthOptions = {
                 email: existingUser.email,
                 // last:existingUser.lastname
                 role:`${existingUser.role}`,
-                // servicename:existingUser.servicename, fetch service name from vanservice db
+                competitorId: existingUser.competitor?.id || null,
+                teamId: existingUser.competitor?.teamId || null,
+                teamName: existingUser.competitor?.team?.name || null,
+                isLeader: existingUser.competitor?.isLeader || false,
             }
             
             // return NextResponse.json({message: "signed in "},{error:"noerror"})
@@ -72,25 +85,25 @@ const authOptions:NextAuthOptions = {
     ],callbacks:{
         async jwt({token,user}){
             if(user){
-                return {
-                    ...token,
-                    role:user.role,
-                    id: user.id,
-                    // servicename:user.servicename,
-                }
+                token.id = user.id;
+                token.role = user.role;
+                token.competitorId = (user as any).competitorId;
+                token.teamId = (user as any).teamId;
+                token.isLeader = (user as any).isLeader;
+                token.teamName = (user as any).teamName;
             }
             return token
         },
         async session({session,token}){
-            return {
-                ...session,
-                user:{
-                    ...session.user,
-                    role:token.role,
-                    id: token.id, 
-                    // servicename:token.servicename,
-                }
+           if (session.user) {
+                session.user.id = token.id as string;
+                session.user.role = token.role as string;
+                session.user.competitorId = token.competitorId as string | null;
+                session.user.teamId = token.teamId as string | null;
+                session.user.isLeader = token.isLeader as boolean;
+                session.user.teamName = token.teamName as string | null;
             }
+            return session;
         }
     }
 }

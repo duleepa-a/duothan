@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Code2, Menu, X } from 'lucide-react';
+import { Code2, Menu, User, UserCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -10,6 +10,8 @@ const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { status, data: session } = useSession();
+  
+  console.log('Session Data:', session);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,10 +29,10 @@ const NavBar = () => {
   ];
 
   const competitorLinks = [
-    { href: '#home', label: 'Home' },
-    { href: '#features', label: 'Features' },
-    { href: '#challenges', label: 'Challenges' },
+    { href: '/competitor/', label: 'Home' },
     { href: '#leaderboard', label: 'Leaderboard' },
+    { href: '/competitor/teams', label: 'Teams' },
+    { href: '/competitor/submissions', label: 'Submissions' },
     { href: '#contact', label: 'Contact' },
   ];
 
@@ -67,17 +69,29 @@ const NavBar = () => {
                     ? '/admin/dashboard'
                     : '/competitor'
                 }>
-                  <Image
-                    src={session.user?.image || '/Images/male_pro_pic_placeholder.png'}
-                    alt="User"
-                    width={40}
-                    height={40}
-                    className="rounded-full border-2 border-yellow-500"
-                  />
+                  {
+                    session.user?.teamName ? (
+                      <div className="text-white text-sm px-4 py-2 bg-gray-800 rounded-lg">
+                        {session.user.teamName}
+                      </div>
+                    ) : session.user?.role === 'ADMIN' ? 
+
+                    (
+                      <div className="text-white text-sm px-4 py-2 bg-gray-800 rounded-lg">
+                          <UserCircle className="w-5 h-5 inline-block mr-2" />
+                      </div>
+                    )
+                    
+                    : (
+                      <div className="text-white text-sm px-4 py-2 bg-gray-800 rounded-lg">
+                        No Team
+                      </div>
+                    )
+                  }
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
-                  className="text-white text-sm px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
+                  className="text-white text-sm px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition cursor-pointer"
                 >
                   Log Out
                 </button>
@@ -85,12 +99,12 @@ const NavBar = () => {
             ) : (
               <>
                 <Link href="/login">
-                  <button className="text-gray-300 hover:text-white px-4 py-2 text-sm font-medium transition-colors">
+                  <button className="text-gray-300 hover:text-white px-4 py-2 text-sm font-medium transition-colors cursor-pointer">
                     Sign In
                   </button>
                 </Link>
                 <Link href="/signup/registration">
-                  <button className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-6 py-2 rounded-lg text-sm font-medium hover:from-yellow-500 hover:to-yellow-600 transition-all font-semibold">
+                  <button className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-6 py-2 rounded-lg text-sm font-medium hover:from-yellow-500 hover:to-yellow-600 transition-all font-semibold cursor-pointer">
                     Get Started
                   </button>
                 </Link>

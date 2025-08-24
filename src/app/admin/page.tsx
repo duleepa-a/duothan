@@ -73,18 +73,22 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <Loader className="w-8 h-8 animate-spin text-yellow-400" />
-        <span className="ml-2 text-white">Loading dashboard...</span>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+        <div className="p-6 flex min-h-screen items-center justify-center">
+          <Loader className="w-8 h-8 animate-spin text-yellow-400" />
+          <span className="ml-2 text-white">Loading dashboard...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-300">
-          Error loading dashboard: {error}
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+        <div className="p-6 flex min-h-screen items-center justify-center">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-300">
+            Error loading dashboard: {error}
+          </div>
         </div>
       </div>
     );

@@ -21,21 +21,31 @@ interface Challenge {
 const TeamDashboard = () => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
 
-  const [codeMap, setCodeMap] = useState<Record<string, string>>({});
-  const [langMap, setLangMap] = useState<Record<string, number>>({});
-  const [outputMap, setOutputMap] = useState<Record<string, string>>({});
-  const [inputMap, setInputMap] = useState<Record<string, string>>({});
+  const [currentUser, setCurrentUser] = useState<{
+      id: string;
+      fullName: string;
+      isLeader: boolean;
+      team: { id: string; name: string , points : number , members : number  } | null;
+    } | null>(null);
+  
+    useEffect(() => {
+      const fetchUser = async () => {
+        try {
+          const res = await fetch("/api/me");
+          if (!res.ok) throw new Error("Failed to fetch user");
+          const data = await res.json();
+          setCurrentUser(data);
+        } catch (err: any) {
+          console.error(err);
+          setCurrentUser(null);
+        }
+      };
+      fetchUser();
+    }, [])
 
+  const currentTeam = currentUser?.team;
 
-  const currentTeam = {
-    id: 'team-123',
-    name: 'Code Crusaders',
-    email: 'team@codecrusaders.com',
-    members: ['Alice', 'Bob', 'Charlie'],
-    points: 1200,
-    challengesCompleted: 3,
-    lastActive: new Date(),
-  };
+  console.log("Current User:", currentUser);
 
   const submissions = [
     {
@@ -61,7 +71,7 @@ const TeamDashboard = () => {
   ];
 
   const completedChallenges = submissions.filter(
-    (s) => s.status === 'accepted' && s.teamId === currentTeam.id
+    (s) => s.status === 'accepted' && s.teamId === currentTeam?.id
   );
 
   useEffect(() => {
@@ -89,7 +99,7 @@ const TeamDashboard = () => {
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <Trophy className="w-6 h-6 text-yellow-400" />
-              <div className="text-2xl font-bold text-white">{currentTeam.points}</div>
+              <div className="text-2xl font-bold text-white">{currentTeam?.points}</div>
             </div>
             <div className="text-gray-400 text-sm">Total Points</div>
           </div>
@@ -107,7 +117,7 @@ const TeamDashboard = () => {
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <Users className="w-6 h-6 text-blue-400" />
-              <div className="text-2xl font-bold text-white">{currentTeam.members.length}</div>
+              <div className="text-2xl font-bold text-white">{currentTeam?.members}</div>
             </div>
             <div className="text-gray-400 text-sm">Team Members</div>
           </div>

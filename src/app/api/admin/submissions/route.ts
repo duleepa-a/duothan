@@ -1,22 +1,23 @@
-import prisma from '@/lib/prisma';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export async function GET(req: Request) {
-  try {
-    const url = new URL(req.url);
-    const limit = Number(url.searchParams.get('limit') || 5);
-    const submissions = await prisma.submissions.findMany({
-      orderBy: { submittedAt: 'desc' },
-      take: limit,
-      include: {
-        teams: { select: { id: true, name: true } },
-        challenges: { select: { id: true, title: true } }
-      }
-    });
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get("status");
+  const type = searchParams.get("type");
 
-    return NextResponse.json({ submissions });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Failed to fetch recent submissions' }, { status: 500 });
-  }
+  const where: any = {};
+  if (status) where.status = status.toUpperCase();
+  if (type) where.type = type.toUpperCase();
+
+  const submissions = await prisma.submissions.findMany({
+    where,
+    include: {
+      teams: true,
+      challenges: true,
+    },
+    orderBy: { submittedAt: "desc" },
+  });
+
+  return NextResponse.json({ submissions });
 }

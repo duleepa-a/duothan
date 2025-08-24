@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { Loader } from 'lucide-react';
 
 interface Challenge {
   id: string;
@@ -21,6 +22,28 @@ export default function ChallengeDetail() {
   const [output, setOutput] = useState('');
   const [flagUnlocked, setFlagUnlocked] = useState(false);
 
+  const [currentUser, setCurrentUser] = useState<{
+      id: string;
+      fullName: string;
+      isLeader: boolean;
+      team: { id: string; name: string } | null;
+    } | null>(null);
+  
+    useEffect(() => {
+      const fetchUser = async () => {
+        try {
+          const res = await fetch("/api/me");
+          if (!res.ok) throw new Error("Failed to fetch user");
+          const data = await res.json();
+          setCurrentUser(data);
+        } catch (err: any) {
+          console.error(err);
+          setCurrentUser(null);
+        }
+      };
+      fetchUser();
+   }, [])
+
   useEffect(() => {
     fetch(`/api/challenges/${id}`)
       .then(res => res.json())
@@ -38,7 +61,7 @@ export default function ChallengeDetail() {
         language_id: lang,
         stdin, // user-provided stdin triggers manual mode
         challengeId: challenge?.id,
-        teamId: 'CURRENT_TEAM_ID',
+        teamId: currentUser?.team?.id || 'NO_TEAM',
       }),
     });
     const result = await res.json();
@@ -66,7 +89,7 @@ export default function ChallengeDetail() {
         language_id: lang,
         stdin: '', // empty triggers full test case mode
         challengeId: challenge?.id,
-        teamId: 'CURRENT_TEAM_ID',
+        teamId: currentUser?.team?.id || 'NO_TEAM',
       }),
     });
     const result = await res.json();
@@ -91,7 +114,7 @@ export default function ChallengeDetail() {
     const res = await fetch(`/api/challenges/${challenge?.id}/submit-flag`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teamId: 'CURRENT_TEAM_ID', flag }),
+      body: JSON.stringify({ teamId: currentUser?.team?.id || 'NO_TEAM', flag }),
     });
     const result = await res.json();
     if (result.isCorrect) {
@@ -100,10 +123,29 @@ export default function ChallengeDetail() {
     } else alert('Incorrect flag.');
   };
 
-  if (!challenge) return <p>Loading...</p>;
+   if (!challenge)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+        <div className="p-6 flex min-h-screen items-center justify-center">
+          <Loader className="w-8 h-8 animate-spin text-yellow-400" />
+          <span className="ml-2 text-white">Loading ...</span>
+        </div>
+      </div>
+    );
+
+    if (!currentUser)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+        <div className="p-6 flex min-h-screen items-center justify-center">
+          <Loader className="w-8 h-8 animate-spin text-yellow-400" />
+          <span className="ml-2 text-white">Loading ...</span>
+        </div>
+      </div>
+    );
+  
 
   return (
-    <div className="p-6 bg-gray-900 text-white min-h-screen">
+    <div className="px-6 py-25 bg-gray-900 text-white min-h-screen">
       <h1 className="text-3xl font-bold mb-4">{challenge.title}</h1>
       <p className="mb-4">{challenge.description}</p>
       <pre className="bg-black p-4 rounded mb-4">{challenge.algorithmicProblem}</pre>

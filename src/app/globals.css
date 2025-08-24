@@ -188,34 +188,47 @@ body {
 
 
   /*--------------------------------------- STYLES FOR FORM COMPONENTS ------------------------------------------------*/
-
   .form-label {
-    @apply text-sm block font-semibold text-active-text mb-2;
+    @apply text-sm block font-semibold text-gray-200 mb-2;
+    /* lighter text so labels are visible on dark bg */
   }
 
   .form-input-field {
-    @apply w-full px-4 py-2 text-sm rounded-lg border transition-all outline-none;
+    @apply w-full px-4 py-2 text-sm rounded-lg border transition-all outline-none 
+          bg-white/10 text-white placeholder-gray-400;
+    /* glassy background, white text, lighter placeholder */
   }
 
   .form-input-field-valid {
-    @apply border-gray-300 focus:border-primary;
+    @apply border-white/20 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400;
+    /* subtle border, yellow focus highlight */
   }
 
   .form-input-field-error {
-    @apply border-red-500 focus:border-red-300;
+    @apply border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500;
+    /* red border + glow on error */
   }
 
-  .error-msg{
-    @apply text-red-500 text-sm mt-1;
+  .error-msg {
+    @apply text-red-400 text-sm mt-1;
+    /* softer red for dark background */
   }
 
-  .submit-bttn{
-    @apply w-full flex items-center justify-center px-2 py-1.5 bg-page-background text-active-text border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer;
+  .submit-bttn {
+    @apply w-full flex items-center justify-center px-4 py-2 
+          bg-white/10 text-gray-200 border border-white/20 rounded-lg 
+          hover:bg-white/20 transition-colors duration-200 cursor-pointer;
+    /* translucent dark button with lighter text */
   }
 
-  .form-btn-full-width{
-    @apply w-full bg-primary hover:bg-black text-white py-2 rounded-md font-semibold cursor-pointer;
+  .form-btn-full-width {
+    @apply w-full bg-gradient-to-r from-yellow-400 to-yellow-500 
+          hover:from-yellow-500 hover:to-yellow-600 
+          text-black py-2 rounded-md font-semibold 
+          cursor-pointer transition-all transform hover:scale-105;
+    /* main CTA button with yellow gradient + hover animation */
   }
+
 
 }
 

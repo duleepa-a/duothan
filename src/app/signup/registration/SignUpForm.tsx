@@ -273,7 +273,7 @@ const SignUpForm = () => {
                                 type="button"
                                 onClick={handleNext}
                                 disabled={userExists}
-                                className={`w-full py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
+                                className={`w-full py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 cursor-pointer ${
                                     !userExists
                                         ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-600 transform hover:scale-105"
                                         : "bg-gray-600 text-gray-400 cursor-not-allowed"

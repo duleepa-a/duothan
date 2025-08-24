@@ -24,9 +24,20 @@ model competitor {
   fullName  String
   contactNo String
   userId    String      @unique
-  user      UserProfile @relation(fields: [userId], references: [id])
+  teamId    String?     
+  isLeader  Boolean     @default(false)
+  team      teams?      @relation(fields: [teamId], references: [id])
+  user      UserProfile @relation(fields: [userId], references: [id]) 
 }
 
+model teams {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  points      Int           @default(0)
+  isActive    Boolean       @default(true)
+  submissions submissions[]
+  competitors competitor[]
+}
 model Admin {
   id        String    @id @default(cuid())
   username  String    @unique
@@ -46,14 +57,15 @@ model challenges {
   order              Int           @unique
   isActive           Boolean       @default(true)
   createdAt          DateTime      @default(now())
-  updatedAt          DateTime
   algorithmicProblem String
   buildathonProblem  String?
   flag               String
   points             Int           @default(100)
   submissions        submissions[]
-  testCases   TestCase[]
+  testCases          TestCase[]
 }
+
+
 
 model TestCase {
   id          String   @id @default(uuid())
@@ -82,18 +94,7 @@ model submissions {
   teams         teams            @relation(fields: [teamId], references: [id], onDelete: Cascade)
 }
 
-model teams {
-  id               String        @id @default(cuid())
-  name             String        @unique
-  email            String        @unique
-  password         String
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime
-  points           Int           @default(0)
-  currentChallenge Int           @default(1)
-  isActive         Boolean       @default(true)
-  submissions      submissions[]
-}
+
 
 enum UserRole {
   ADMIN

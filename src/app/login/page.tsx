@@ -82,7 +82,11 @@ export default function LoginPage() {
           if (userRole === 'ADMIN') {
             router.push('/admin');
           } else if (userRole === 'COMPETITOR') {
-            router.push('/competitor');
+            if (!session.user.teamId) {
+              router.push('/teams'); // pick or create team
+            } else {
+              router.push('/competitor');
+            }
           } else if (userRole === 'PARENT') {
             router.push('/parent');
           } else {
@@ -221,7 +225,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={handleLogin}
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-3 px-4 rounded-lg font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-3 px-4 rounded-lg font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none cursor-pointer"
                 >
                   {isLoading ? (
                       <div className="flex items-center justify-center">
