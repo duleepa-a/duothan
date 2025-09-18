@@ -52,24 +52,30 @@ export async function POST(req: NextRequest) {
           'X-RapidAPI-Key': RAPIDAPI_KEY,
           'X-RapidAPI-Host': RAPIDAPI_HOST,
         },
-        body: JSON.stringify({ source_code, language_id, stdin: testCase.input }),
+        body: JSON.stringify({
+                               source_code, 
+                               language_id, 
+                               stdin: testCase.input.replace(/\\n/g, '\n'), 
+                            }),
       });
 
       console.log('Judge0 Response:', res);
 
       const result = await res.json();
-      const output = result.stdout?.trim || result.stderr || result.compile_output?.trim || '';
-      const passed = output === testCase.expected.trim();
+      const output = result.stdout || result.stderr || result.compile_output || '';
+      const passed = output.trim() === testCase.expected.trim();
 
       if (!passed) allPassed = false;
 
       testResults.push({
-        input: testCase.input,
+        input: testCase.input.replace(/\\n/g, '\n'),
         expected: testCase.expected,
         output,
         passed,
       });
     }
+
+    console.log('Test Results:', testResults);
 
     // Save submission with overall status
     const submission = await prisma.submissions.create({
